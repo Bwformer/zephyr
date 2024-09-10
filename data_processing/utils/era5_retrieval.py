@@ -45,7 +45,7 @@ def estimate_num_requests(request_dict):
     item_size = base_size * (1.0 / request_dict['grid'][0]) * (1.0 / request_dict['grid'][1])
 
     # Calculate the number of requests based on the item limit
-    num_requests_item_limit = int(np.ceil(items/120000))
+    num_requests_item_limit = int(np.ceil(items/60000))
     
     # Calculate the total size of the data
     total_size = items * item_size

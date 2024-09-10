@@ -555,22 +555,39 @@ is not available at this time.')
         outputs = []
         for step in range(self.integration_steps):
             
-           # print()
-           # print(f'==== FIGURING HIDDEN STATE LOGIC ====')
-           # print(f'inputs shape [len(inputs)={len(inputs)}]:')
-           # print(f'    input[0]: {inputs[0].shape}')
-           # print(f'    input[1]: {inputs[1].shape}')
-           # print(f'    input[2]: {inputs[2].shape}')
-           # print(f'    input[3]: {inputs[3].shape}')
-            #print(f'hidden state arithmatic:')
-            #print(f'    presteps: {self.presteps}')
-            #s = 0+step
-            #print(f'    s*self.input_time_dim:(s+1)*self.input_time_dim = {s*self.input_time_dim}:{(s+1)*self.input_time_dim}')
-            #print(f'skipping over presteps in foward pass:')
-            #s=self.presteps
-            #print(f'    s: {s}')
-            #print(f'    s*self.input_time_dim:(s+1)*self.input_time_dim = {s*self.input_time_dim}:{(s+1)*self.input_time_dim}')
-            #print(f'    self.delta_t = {self.delta_t}')
+            # print()
+            # print(f'==== FIGURING HIDDEN STATE LOGIC ====')
+            # print(f'inputs shape [len(inputs)={len(inputs)}]:')
+            # print(f'    input_channel: {self.input_channels}')
+            # print(f'    output_channel: {self.output_channels}')
+            # print(f'    constant_channel: {self.n_constants}')
+            # print(f'    input_time_dim: {self.input_time_dim}')
+            # print(f'    output_time_dim: {self.output_time_dim}')
+            # print(f'    input[0]: {inputs[0].shape}')
+            # print(f'    input[1]: {inputs[1].shape}')
+            # print(f'    input[2]: {inputs[2].shape}')
+            # print(f'    input[3]: {inputs[3].shape}')
+            # print(f'hidden state arithmatic:')
+            # print(f'    presteps: {self.presteps}')
+            # s = 0+step
+            # print(f'    s*self.input_time_dim:(s+1)*self.input_time_dim = {s*self.input_time_dim}:{(s+1)*self.input_time_dim}')
+            # print(f'skipping over presteps in foward pass:')
+            # s=self.presteps
+            # print(f'    s: {s}')
+            # print(f'    s*self.input_time_dim:(s+1)*self.input_time_dim = {s*self.input_time_dim}:{(s+1)*self.input_time_dim}')
+            # print(f'    self.delta_t = {self.delta_t}')
+
+    # inputs shape [len(inputs)=4]:
+    # input_channel: 9
+    # output_channel: 9
+    # constant_channel: 2
+    # input_time_dim: 2
+    # output_time_dim: 4
+    # input[0]: torch.Size([16, 12, 4, 9, 32, 32])
+    # input[1]: torch.Size([16, 12, 8, 1, 32, 32])
+    # input[2]: torch.Size([12, 2, 32, 32])
+    # input[3]: torch.Size([3, 16, 1, 12, 32, 32])
+
 
             # (Re-)initialize recurrent hidden states
             if (step*(self.delta_t*self.input_time_dim)) % self.reset_cycle == 0:

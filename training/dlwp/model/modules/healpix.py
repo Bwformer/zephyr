@@ -30,6 +30,8 @@ from einops.layers.torch import Rearrange
 
 import sys 
 sys.path.append('/home/disk/quicksilver/nacc/dlesm/HealPixPad')
+# sys.path.append('/home/disk/brume/bowenliu/git_clone/zephyr/HealPixPad')
+
 have_healpixpad = False
 try:
     from healpixpad import HEALPixPad

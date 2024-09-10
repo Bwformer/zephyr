@@ -144,7 +144,7 @@ def create_time_series_dataset_classic(
         return open_time_series_dataset_classic_prebuilt(directory=dst_directory, dataset_name=dataset_name,
                                                          constants=constants is not None)
     elif file_exists and overwrite:
-        print(f'Overwriting {os.path.join(st_directory, dataset_name)}.zarr')
+        print(f'Overwriting {os.path.join(dst_directory, dataset_name)}.zarr')
         shutil.rmtree(os.path.join(dst_directory, dataset_name + ".zarr"))
 
     output_variables = output_variables or input_variables
@@ -670,6 +670,14 @@ class CoupledTimeSeriesDataset(TimeSeriesDataset):
             # insolation but bypass this method see method "next_integration()" for details
             self.curr_item = item
             self.integration_step = 1
+
+        # print()
+        # print(f'==== FIGURING HIDDEN STATE LOGIC ====')
+        # print(f'input_time_dim: {self.input_time_dim}')
+        # print(f'output_time_dim: {self.output_time_dim}')
+        # print(f'=====================================')
+        # input_time_dim: 4
+        # output_time_dim: 4
 
         # Get buffers for the batches, which we'll fill in iteratively.
         inputs = np.empty((this_batch, self.input_time_dim, 

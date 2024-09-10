@@ -22,7 +22,7 @@ EXAMPLE_PARAMS = {
     'order' : 'bilinear', # order of the interpolation
     'resolution_factor' : 1.0,
     'visualize':False, # This determines whether to visualize remap. Warning: buggy
-    'pool_size': 1,
+    'poolsize': 1,
 }
 EXAMPLE_PARAMS_CONSTANT = {
     'file_name' : '/home/quicksilver2/nacc/Data/pipeline_dev/era5_1950-2022_3h_1deg_lsm.nc',
@@ -101,7 +101,7 @@ def main(params, output_file=None):
         file_variable_name=args.file_variable_name,
         target_variable_name=args.target_variable_name,
         target_file_variable_name=target_file_variable_name,
-        poolsize=getattr(args,'pool_size',1),
+        poolsize=getattr(args,'poolsize',1),
         chunk_ds=True,
         output_file=output_file,
     )

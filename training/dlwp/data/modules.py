@@ -111,7 +111,7 @@ class TimeSeriesDataModule():
         self.constants = constants
         self.scaling = scaling
         self.splits = splits
-        self.input_time_dim = input_time_dim + (presteps*input_time_dim)
+        self.input_time_dim = input_time_dim + (presteps*input_time_dim) # here is why input_time_dim is 4
         self.output_time_dim = output_time_dim
         self.data_time_step = data_time_step
         self.time_step = time_step

@@ -23,6 +23,7 @@ import torch as th
 import xarray as xr
 from tqdm import tqdm
 import pprint
+import cftime
 from torchinfo import summary
 from dask.diagnostics import ProgressBar
 
@@ -33,7 +34,34 @@ from scripts.coupled_forecast import get_coupled_time_dim
 logger = logging.getLogger(__name__)
 logging.getLogger('cfgrib').setLevel(logging.ERROR)
 logging.getLogger('matplotlib').setLevel(logging.ERROR)
-  
+
+# Function to convert numpy.datetime64 to cftime.DatetimeGregorian
+def to_cftime(dt):
+    return cftime.DatetimeGregorian(dt.astype(object).year, dt.astype(object).month, dt.astype(object).day, dt.astype(object).hour, dt.astype(object).minute)
+
+def _get_datetime_range(start, end_date, time_step):
+
+    if len(start) > 1:
+        raise ValueError('Datetime forecasts require a single initialization date.')
+    start = start[0]
+    # required to turn config time step to np.timedelta interpretable string
+    def fix_time_step(time_step):
+        num, unit = time_step[:-1], time_step[-1]
+        if unit == 'H':
+            unit = 'h'
+        return num, unit
+    step_num, step_unit = fix_time_step(time_step)
+    dt = np.timedelta64(step_num, step_unit)
+
+    # fix precision of forecast dates to support extended forecasting
+    start = start.astype('datetime64[m]')
+    end_date = np.datetime64(end_date).astype('datetime64[m]')
+    dt = dt.astype('timedelta64[m]')
+    
+    forecast_dates = np.arange(start, end_date  + np.timedelta64(1, 'm'), dt)
+    return forecast_dates[1:], forecast_dates[0] # return all but first date and first date
+
+
 def coupled_inference_hdf5(args: argparse.Namespace):
     forecast_dates = get_forecast_dates(args.forecast_init_start, args.forecast_init_end, args.freq)
     os.makedirs(args.output_directory, exist_ok=True)
@@ -72,16 +100,28 @@ def coupled_inference_hdf5(args: argparse.Namespace):
         ocean_cfg.model.enable_healpixpad = False
  
     # Set up data module with some overrides for inference. Compute expected output time dimension.
-    atmos_output_lead_times = np.arange(
-        _convert_time_step(atmos_cfg.data.gap),
-        _convert_time_step(args.lead_time) + pd.Timedelta(seconds=1),
-        _convert_time_step(atmos_cfg.data.time_step)
-    )
-    ocean_output_lead_times = np.arange(
-        _convert_time_step(ocean_cfg.data.gap),
-        _convert_time_step(args.lead_time) + pd.Timedelta(seconds=1),
-        _convert_time_step(ocean_cfg.data.time_step)
-    )
+    if args.datetime:
+        atmos_output_lead_times, first_step_datetime_atmos = _get_datetime_range(
+            start = forecast_dates,
+            end_date = args.end_date,
+            time_step = atmos_cfg.data.time_step
+        )
+        ocean_output_lead_times, first_step_datetime_ocean = _get_datetime_range(
+            start = forecast_dates,
+            end_date = args.end_date,
+            time_step = ocean_cfg.data.time_step
+        )
+    else:
+        atmos_output_lead_times = np.arange(
+            _convert_time_step(atmos_cfg.data.gap),
+            _convert_time_step(args.lead_time) + pd.Timedelta(seconds=1),
+            _convert_time_step(atmos_cfg.data.time_step)
+        )
+        ocean_output_lead_times = np.arange(
+            _convert_time_step(ocean_cfg.data.gap),
+            _convert_time_step(args.lead_time) + pd.Timedelta(seconds=1),
+            _convert_time_step(ocean_cfg.data.time_step)
+        )
     # figure concurrent forecasting time variables 
     atmos_coupled_time_dim, ocean_coupled_time_dim = get_coupled_time_dim(atmos_cfg, ocean_cfg)
     # The number of times each model will be called. Should be the same whether ocean or atmos 
@@ -124,13 +164,23 @@ def coupled_inference_hdf5(args: argparse.Namespace):
         **optional_kwargs
     )
     ocean_loader, _ = ocean_data_module.test_dataloader()
+    # if using datetime64 instead of pandas, set dataloader flag
+    if args.datetime:
+        atmos_data_module.set_datetime()
+        ocean_data_module.set_datetime()
     
     # checks to make sure timeing and lead time line up 
-    if forecast_integrations*ocean_coupled_time_dim*pd.Timedelta(ocean_data_module.time_step) != \
-        forecast_integrations*atmos_coupled_time_dim*pd.Timedelta(atmos_data_module.time_step):
-        raise ValueError('Lead times of atmos and ocean models does not align.')
-    if forecast_integrations*ocean_coupled_time_dim*pd.Timedelta(ocean_data_module.time_step) != _convert_time_step(args.lead_time):
-        raise ValueError(f'Requested leadtime ({_convert_time_step(args.lead_time)}) and coupled integration ({forecast_integrations*ocean_coupled_time_dim*pd.Timedelta(ocean_data_module.time_step)}) are not the same. Make sure lead time is compatible with component model intersections.')
+    if args.datetime:
+        if atmos_output_lead_times[-1] != ocean_output_lead_times[-1]:
+            raise ValueError('Last output time of atmos and ocean models does not align. Make sure lead time is compatible with component model intersections.')
+        if forecast_integrations*ocean_coupled_time_dim*1/len(ocean_output_lead_times) != forecast_integrations*atmos_coupled_time_dim*1/len(atmos_output_lead_times):
+            raise ValueError(f'Requested leadtime and coupled integration are not the same. Make sure lead time is compatible with component model intersections.')
+    else:
+        if forecast_integrations*ocean_coupled_time_dim*pd.Timedelta(ocean_data_module.time_step) != \
+            forecast_integrations*atmos_coupled_time_dim*pd.Timedelta(atmos_data_module.time_step):
+            raise ValueError('Lead times of atmos and ocean models does not align.')
+        if forecast_integrations*ocean_coupled_time_dim*pd.Timedelta(ocean_data_module.time_step) != _convert_time_step(args.lead_time):
+            raise ValueError(f'Requested leadtime ({_convert_time_step(args.lead_time)}) and coupled integration ({forecast_integrations*ocean_coupled_time_dim*pd.Timedelta(ocean_data_module.time_step)}) are not the same. Make sure lead time is compatible with component model intersections.')
 
 
     # Set output_time_dim param override.
@@ -336,12 +386,21 @@ def coupled_inference_hdf5(args: argparse.Namespace):
     ocean_meta_ds = ocean_data_module.test_dataset.ds
     atmos_meta_ds = atmos_data_module.test_dataset.ds
 
+    # organize steps arrays, invoking cftime if necessary
+    if args.datetime:
+        ocean_steps = [to_cftime(lt) for lt in [first_step_datetime_ocean] + list(ocean_output_lead_times)]
+        atmos_steps = [to_cftime(lt) for lt in [first_step_datetime_atmos] + list(atmos_output_lead_times)]
+        forecast_dates = [to_cftime(f.astype('datetime64[m]')) for f in forecast_dates]
+    else:
+        ocean_steps = [pd.Timedelta(hours=0)] + list(ocean_output_lead_times)
+        atmos_steps = [pd.Timedelta(hours=0)] + list(atmos_output_lead_times)
+    # initialize data arrays
     ocean_prediction_da = xr.DataArray(
         ocean_prediction,
         dims=['time', 'step', 'channel_out', 'face', 'height', 'width'],
         coords={
             'time': forecast_dates,
-            'step': [pd.Timedelta(hours=0)] + list(ocean_output_lead_times),
+            'step': ocean_steps,
             'channel_out': ocean_cfg.data.output_variables or ocean_cfg.data.input_variables,
             'face': ocean_meta_ds.face,
             'height': ocean_meta_ds.height,
@@ -353,13 +412,14 @@ def coupled_inference_hdf5(args: argparse.Namespace):
         dims=['time', 'step', 'channel_out', 'face', 'height', 'width'],
         coords={
             'time': forecast_dates,
-            'step': [pd.Timedelta(hours=0)] + list(atmos_output_lead_times),
+            'step': atmos_steps,
             'channel_out': atmos_cfg.data.output_variables or atmos_cfg.data.input_variables,
             'face': atmos_meta_ds.face,
             'height': atmos_meta_ds.height,
             'width': atmos_meta_ds.width
         }
     )
+
     # Re-scale prediction
     ocean_prediction_da[:] *= ocean_data_module.test_dataset.target_scaling['std']
     ocean_prediction_da[:] += ocean_data_module.test_dataset.target_scaling['mean']
@@ -454,6 +514,10 @@ if __name__ == '__main__':
                         help="Prefix for test data files")
     parser.add_argument('--data-suffix', type=str, default=None,
                         help="Suffix for test data files")
+    parser.add_argument('--datetime', type=bool, default=False,
+                        help="Use numpy.datetim64 for time encoding, necessary for longer simulations (>200 years)")
+    parser.add_argument('--end-date', type=str, default=None,
+                        help="Last time in forecast. Only used if forecast is using datetime64")
     parser.add_argument('--gpu', type=int, default=0,
                         help="Index of GPU device on which to run model. If -1 forecast will be done on CPU")
 
