@@ -2,6 +2,7 @@ from utils import (
     era5_retrieval,
     data_imputation,
     map2hpx,
+    # map2hpx_cuda,
     windspeed,
     trailing_average,
     update_scaling,
@@ -51,10 +52,10 @@ hpx_params = [
         "file_variable_name": "z",
         "prefix": "/home/disk/rhodium/bowenliu/HPX32/era5_1deg_3h_HPX32_1950-2022_",
         "nside": 32,
-        "order": "bilinear",
-        "resolution_factor": 1.0,
-        "visualize": False,
-        "poolsize": 30 
+        # "order": "bilinear",
+        # "resolution_factor": 1.0,
+        # "visualize": False,
+        # "poolsize": 30 
     },
     {
         "file_name": "/home/disk/rhodium/bowenliu/ERA5/era5_1950-2022_3h_1deg_z50.nc",
@@ -62,10 +63,10 @@ hpx_params = [
         "file_variable_name": "z",
         "prefix": "/home/disk/rhodium/bowenliu/HPX32/era5_1deg_3h_HPX32_1950-2022_",
         "nside": 32,
-        "order": "bilinear",
-        "resolution_factor": 1.0,
-        "visualize": False,
-        "poolsize": 30 # The number of parallel processes to use
+        # "order": "bilinear",
+        # "resolution_factor": 1.0,
+        # "visualize": False,
+        # "poolsize": 30 # The number of parallel processes to use
     },
 ]
 
@@ -78,9 +79,9 @@ update_scaling_params = {
         "z50",
     ],
     "selection_dict": {
-        "sample": slice(np.datetime64("1950-01-01"), np.datetime64("2022-12-31"))
+        "time": slice(np.datetime64("1950-01-01"), np.datetime64("2022-12-31"))
     },
-    "overwrite": False,
+    "overwrite": True,
     "chunks": None,
 }
 # parameters used to write optimized zarr file
@@ -108,8 +109,9 @@ zarr_params = {
 # for request in era5_requests:
 #     era5_retrieval.main(request)
 # Remap data to HPX mesh
-for hpx_param in hpx_params:
-    map2hpx.main(hpx_param)
+# for hpx_param in hpx_params:
+#     # map2hpx.main(hpx_param)
+#     map2hpx_cuda.main(hpx_param)
 # update scaling dictionary
 update_scaling.main(update_scaling_params)
 # # create zarr file for optimized training

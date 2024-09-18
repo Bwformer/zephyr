@@ -69,12 +69,16 @@ def main(params):
             da = xr.open_dataset(params['variable_file_prefix'] + variable_name + '.nc',chunks=params['chunks'])[variable_name].sel(params['selection_dict'])
         else: 
             da = xr.open_dataset(params['variable_files'][i],chunks=params['chunks'])[variable_name].sel(params['selection_dict'])
-
+        
+        print('input_data:')
+        print(da)
         # Calculate the mean and standard deviation
         if params['chunks'] is None:
             da.load()
-            mean = da.values.mean()
-            std = da.values.std()
+            mean = da.mean().values
+            std = da.std().values
+            print('mean:',mean)
+            print('std:',std)
         else:
             raise NotImplementedError("chunked calculation of mean and std is not yet implemented. Xarray's built-in std function is bad!")
 
