@@ -17,7 +17,7 @@ EXAMPLE_PARAMS = {
 
 def regrid_tensor(x, regrid_func, shape):
     if torch.cuda.is_available():
-        device = torch.device("cuda:0")
+        device = torch.device("cuda:1")
     else:
         device = torch.device("cpu")
     x_tensor = torch.tensor(x, dtype=torch.double).to(device)

@@ -166,7 +166,8 @@ If issue arrises delete file and try again.')
         concated_ds = xr.open_mfdataset(file_partitions,
                                         combine = 'nested',
                                         chunks=dict(time=8) if not params['constant'] else None,
-                                        concat_dim='time' if not params['constant'] else None)
+                                        concat_dim='valid_time' if not params['constant'] else None)
+        concated_ds = concated_ds.rename({'valid_time':'time'}).squeeze()
         
         # default encoding to int16 produces erroneous values for some variables
         varnames = list(concated_ds.data_vars)

@@ -17,32 +17,45 @@ This data pipline creates training, validation, and test data for a coupled deep
 """
 
 era5_requests = [
-    # z150
+    # z10
     {
         "constant": False,
         "single_level_variable": False,
         "variable_name": "z",
-        "pressure_level": "150",
+        "pressure_level": "10",
         "grid": [1, 1],
         "year": [y for y in range(1950, 2023)],
         "month": [month + 1 for month in range(0, 12)],
         "day": [d + 1 for d in range(0, 31)],
         "time": np.arange(0, 24, 3).tolist(),
-        "target_file": "/home/disk/rhodium/bowenliu/ERA5/era5_1950-2022_3h_1deg_z150.nc",
+        "target_file": "/home/disk/rhodium/bowenliu/ERA5/era5_1950-2022_3h_1deg_z10.nc",
     },
+    # # z150
+    # {
+    #     "constant": False,
+    #     "single_level_variable": False,
+    #     "variable_name": "z",
+    #     "pressure_level": "150",
+    #     "grid": [1, 1],
+    #     "year": [y for y in range(1950, 2023)],
+    #     "month": [month + 1 for month in range(0, 12)],
+    #     "day": [d + 1 for d in range(0, 31)],
+    #     "time": np.arange(0, 24, 3).tolist(),
+    #     "target_file": "/home/disk/rhodium/bowenliu/ERA5/era5_1950-2022_3h_1deg_z150.nc",
+    # },
     # z50
-    {
-        "constant": False,
-        "single_level_variable": False,
-        "variable_name": "z",
-        "pressure_level": "50",
-        "grid": [1, 1],
-        "year": [y for y in range(1950, 2023)],
-        "month": [month + 1 for month in range(0, 12)],
-        "day": [d + 1 for d in range(0, 31)],
-        "time": np.arange(0, 24, 3).tolist(),
-        "target_file": "/home/disk/rhodium/bowenliu/ERA5/era5_1950-2022_3h_1deg_z50.nc",
-    },
+    # {
+    #     "constant": False,
+    #     "single_level_variable": False,
+    #     "variable_name": "z",
+    #     "pressure_level": "50",
+    #     "grid": [1, 1],
+    #     "year": [y for y in range(1950, 2023)],
+    #     "month": [month + 1 for month in range(0, 12)],
+    #     "day": [d + 1 for d in range(0, 31)],
+    #     "time": np.arange(0, 24, 3).tolist(),
+    #     "target_file": "/home/disk/rhodium/bowenliu/ERA5/era5_1950-2022_3h_1deg_z50.nc",
+    # },
 ]
 # parameters for healpix remapping
 hpx_params = [
@@ -77,6 +90,7 @@ update_scaling_params = {
     "variable_names": [
         "z150",
         "z50",
+        # "stv",
     ],
     "selection_dict": {
         "time": slice(np.datetime64("1950-01-01"), np.datetime64("2022-12-31"))
@@ -86,33 +100,33 @@ update_scaling_params = {
 }
 # parameters used to write optimized zarr file
 zarr_params = {
-    "src_directory": "/home/disk/rhodium/dlwp/data/HPX32/",
-    "dst_directory": "/home/disk/rhodium/dlwp/data/HPX32/",
-    "dataset_name": "hpx32_1950-2022_3h_sst_coupled",
+    "src_directory": "/home/disk/rhodium/bowenliu/HPX32/",
+    "dst_directory": "/home/disk/quicksilver2/bowenliu/data/HPX32/",
+    "dataset_name": "hpx32_1950-2022_3h_z150_z50",
     "input_variables": [
-        "sst",
-        "ws10-48H",
-        "z1000-48H",
+        "z150",
+        "z50",
     ],
     "output_variables": [
-        "sst",
+        "z150",
+        "z50",
     ],
-    "constants": {"lsm": "lsm"},
+    "constants": None,
     "prefix": "era5_1deg_3h_HPX32_1950-2022_",
     "batch_size": 16,
     "scaling": OmegaConf.load(
         update_scaling.create_yaml_if_not_exists(update_scaling_params["scale_file"])
     ),
-    "overwrite": False,
+    "overwrite": True,
 }
 # Retrive raw data
-# for request in era5_requests:
-#     era5_retrieval.main(request)
+for request in era5_requests:
+    era5_retrieval.main(request)
 # Remap data to HPX mesh
 # for hpx_param in hpx_params:
 #     # map2hpx.main(hpx_param)
 #     map2hpx_cuda.main(hpx_param)
-# update scaling dictionary
-update_scaling.main(update_scaling_params)
+# # update scaling dictionary
+# update_scaling.main(update_scaling_params)
 # # create zarr file for optimized training
 # dl.create_time_series_dataset_classic(**zarr_params)

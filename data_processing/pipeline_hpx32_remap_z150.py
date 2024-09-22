@@ -13,13 +13,13 @@ and update the scaling parameters for the remapped variables.
 """
 # parameters for healpix remapping
 hpx_params = [
-    {
-        "file_name": "/home/disk/rhodium/bowenliu/ERA5/era5_1950-2022_3h_1deg_z150.nc",
-        "target_variable_name": "z150",
-        "file_variable_name": "z",
-        "prefix": "/home/disk/rhodium/bowenliu/HPX32/era5_1deg_3h_HPX32_1950-2022_",
-        "nside": 32,
-    },
+    # {
+    #     "file_name": "/home/disk/rhodium/bowenliu/ERA5/era5_1950-2022_3h_1deg_z150.nc",
+    #     "target_variable_name": "z150",
+    #     "file_variable_name": "z",
+    #     "prefix": "/home/disk/rhodium/bowenliu/HPX32/era5_1deg_3h_HPX32_1950-2022_",
+    #     "nside": 32,
+    # },
     {
         "file_name": "/home/disk/rhodium/bowenliu/ERA5/era5_1950-2022_3h_1deg_z50.nc",
         "target_variable_name": "z50",
@@ -27,11 +27,18 @@ hpx_params = [
         "prefix": "/home/disk/rhodium/bowenliu/HPX32/era5_1deg_3h_HPX32_1950-2022_",
         "nside": 32,
     },
+    # {
+    #     "file_name": "/home/disk/rhodium/bowenliu/mass_flux/era5_1950-2022_6h_1deg_stv.nc",
+    #     "target_variable_name": "stv",
+    #     "file_variable_name": "stv",
+    #     "prefix": "/home/disk/rhodium/bowenliu/HPX32/era5_1deg_6h_HPX32_1950-2022_",
+    #     "nside": 32,
+    # },
 ]
 
 # Remap data to HPX mesh
 for hpx_param in hpx_params:
-    # map2hpx_cuda.main(hpx_param)
-    map2hpx_cuda_gpu.main(hpx_param)
+    map2hpx_cuda.main(hpx_param)
+    # map2hpx_cuda_gpu.main(hpx_param)
 
 
